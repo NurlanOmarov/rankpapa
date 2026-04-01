@@ -21,11 +21,8 @@ COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_module
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 
 COPY packages/shared ./packages/shared
-COPY apps/api ./apps/api
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-
 # Generate Prisma client before build
-RUN cd apps/api && npx prisma generate
+RUN cd apps/api && pnpm exec prisma generate
 
 # Build shared first, then api
 RUN pnpm --filter @rankpapa/shared build
@@ -43,10 +40,12 @@ COPY apps/api/package.json ./apps/api/
 
 RUN pnpm install --frozen-lockfile --prod
 
+# Generate Prisma client in the runner for runtime access
+COPY apps/api/prisma ./apps/api/prisma
+RUN cd apps/api && pnpm exec prisma generate
+
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY apps/api/prisma ./apps/api/prisma
 
 WORKDIR /app/apps/api
 
