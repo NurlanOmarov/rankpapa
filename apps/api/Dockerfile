@@ -21,6 +21,9 @@ COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_module
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 
 COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+
 # Generate Prisma client before build
 RUN cd apps/api && pnpm exec prisma generate
 

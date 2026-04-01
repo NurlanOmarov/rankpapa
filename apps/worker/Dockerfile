@@ -24,6 +24,7 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/worker/package.json ./apps/worker/
+COPY apps/api/package.json ./apps/api/
 
 RUN pnpm install --frozen-lockfile
 
@@ -34,6 +35,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 
 COPY packages/shared ./packages/shared
 COPY apps/worker ./apps/worker
