@@ -37,6 +37,8 @@ COPY --from=deps /app/apps/worker/node_modules ./apps/worker/node_modules
 
 COPY packages/shared ./packages/shared
 COPY apps/worker ./apps/worker
+COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma ./apps/api/prisma
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
 # Generate Prisma client (worker also uses prisma) before build
