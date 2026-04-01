@@ -132,9 +132,9 @@ export async function newPage(session: BrowserSession): Promise<Page> {
     delete window.callPhantom;
 
     // 4. Chrome object consistency (headless vs real Chrome differences)
-    if (!window.chrome) {
+    if (!(window as any).chrome) {
       // @ts-ignore
-      window.chrome = { runtime: {}, loadTimes: () => ({}), csi: () => ({}) };
+      (window as any).chrome = { runtime: {}, loadTimes: () => ({}), csi: () => ({}) };
     }
 
     // 5. Permissions API — headless returns 'denied' by default for notifications
@@ -143,8 +143,8 @@ export async function newPage(session: BrowserSession): Promise<Page> {
       Object.defineProperty(navigator.permissions, 'query', {
         value: (params: PermissionDescriptor) =>
           params.name === 'notifications'
-            ? Promise.resolve({ state: 'default' } as PermissionStatus)
-            : origQuery(params),
+            ? Promise.resolve({ state: 'default' } as any as PermissionStatus)
+            : (origQuery as any)(params),
       });
     }
   });

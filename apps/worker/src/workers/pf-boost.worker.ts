@@ -186,7 +186,7 @@ async function updateVisit(
     trafficBytes?: number;
   },
 ): Promise<void> {
-  await prisma.visit.update({ where: { id }, data: data as Parameters<typeof prisma.visit.update>[0]['data'] });
+  await prisma.visit.update({ where: { id }, data: data as any });
 }
 
 export function startPfBoostWorker(): Worker {

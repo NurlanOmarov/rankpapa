@@ -39,11 +39,11 @@ COPY packages/shared ./packages/shared
 COPY apps/worker ./apps/worker
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
+# Generate Prisma client (worker also uses prisma) before build
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
+
 RUN pnpm --filter @rankpapa/shared build
 RUN pnpm --filter @rankpapa/worker build
-
-# Generate Prisma client (worker also uses prisma)
-RUN cd apps/worker && npx prisma generate --schema=../api/prisma/schema.prisma 2>/dev/null || true
 
 # ── production stage ─────────────────────────────────────────────────────────
 FROM base AS runner

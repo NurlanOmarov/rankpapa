@@ -134,7 +134,7 @@ export async function humanScroll(
   let scrolled = 0;
   while (scrolled < targetScroll) {
     // Find which zone we're in
-    const currentZone = contentZones.findLast?.((z) => z.top <= scrolled) ?? null;
+    const currentZone = contentZones.findLast?.((z: any) => z.top <= scrolled) ?? null;
     const zoneType = currentZone?.type ?? 'text';
 
     // Cognitive load: text = small chunks + long pauses, images = big chunks + short pauses
