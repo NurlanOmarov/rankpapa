@@ -42,7 +42,7 @@ COPY apps/api/prisma ./apps/api/prisma
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
 # Generate Prisma client (worker also uses prisma) before build
-RUN pnpm --filter @rankpapa/api exec prisma generate --schema=apps/api/prisma/schema.prisma
+RUN pnpm --filter @rankpapa/api exec prisma generate
 
 RUN pnpm --filter @rankpapa/shared build
 RUN pnpm --filter @rankpapa/worker build
@@ -63,7 +63,7 @@ RUN pnpm install --frozen-lockfile --prod
 # Generate Prisma client in the runner for runtime access
 # Worker needs the schema from the api app
 COPY apps/api/prisma ./apps/api/prisma
-RUN pnpm --filter @rankpapa/api exec prisma generate --schema=apps/api/prisma/schema.prisma
+RUN pnpm --filter @rankpapa/api exec prisma generate
 
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
