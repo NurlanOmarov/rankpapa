@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { PrismaClient, NotificationType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+type NotificationType = 'SANCTION' | 'BILLING' | 'INFO';
 
 const prisma = new PrismaClient();
 

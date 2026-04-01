@@ -111,7 +111,7 @@ export async function campaignsRoutes(app: FastifyInstance) {
           keyword: kw.keyword,
           targetDomain: site.domain,
           geo: site.geo,
-        }, { repeat: { cron: '0 8 * * *' } });
+        }, { repeat: { pattern: '0 8 * * *' } });
       }
     }
 
