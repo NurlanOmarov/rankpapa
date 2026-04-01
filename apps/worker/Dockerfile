@@ -1,5 +1,5 @@
 FROM node:20-alpine AS base
-RUN npm install -g pnpm
+RUN npm install -g pnpm && apk add --no-cache openssl
 # Playwright requires chromium dependencies
 RUN apk add --no-cache \
     chromium \

@@ -1,5 +1,5 @@
 FROM node:20-alpine AS base
-RUN npm install -g pnpm
+RUN npm install -g pnpm && apk add --no-cache openssl
 
 # ── deps stage ──────────────────────────────────────────────────────────────
 FROM base AS deps
@@ -33,7 +33,7 @@ RUN pnpm --filter @rankpapa/api build
 
 # ── production stage ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
-RUN npm install -g pnpm
+RUN npm install -g pnpm && apk add --no-cache openssl
 
 WORKDIR /app
 
