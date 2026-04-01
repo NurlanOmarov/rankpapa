@@ -1,0 +1,43 @@
+# Dependencies
+**/node_modules
+**/.pnpm-store
+
+# Build artifacts
+**/dist
+**/.next
+**/.nuxt
+
+# Dev files
+**/*.log
+**/.env
+**/.env.local
+**/.env.development
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose.dev.yml
+**/.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# Tests
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+
+# Docs
+*.md
+ТЗ.md
+исследовование.md
+чеклист
+grok
+rankpapa.txt

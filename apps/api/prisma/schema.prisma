@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  plan         Plan      @default(FREE)
+  balance      Float     @default(0)
+  trialEndsAt  DateTime?
+  telegramChatId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sites         Site[]
+  transactions  Transaction[]
+  notifications Notification[]
+}
+
+enum Plan {
+  FREE
+  START
+  PRO
+  AGENCY
+}
+
+// ─── Sites ───────────────────────────────────────────────────────────────────
+
+model Site {
+  id         String     @id @default(cuid())
+  userId     String
+  domain     String
+  status     SiteStatus @default(ACTIVE)
+  geo        GeoCity    @default(ALMATY)
+  deviceType DeviceType @default(MIXED)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns  Campaign[]
+
+  @@unique([userId, domain])
+}
+
+enum SiteStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum GeoCity {
+  ALMATY
+  ASTANA
+  SHYMKENT
+  ALL
+}
+
+enum DeviceType {
+  DESKTOP
+  MOBILE
+  MIXED
+}
+
+// ─── Campaigns ───────────────────────────────────────────────────────────────
+
+model Campaign {
+  id              String         @id @default(cuid())
+  siteId          String
+  type            CampaignType
+  status          CampaignStatus @default(ACTIVE)
+  dailyVisitLimit Int            @default(100)
+  dwellTimeMin    Int            @default(60)
+  dwellTimeMax    Int            @default(180)
+  pagesPerSession Int            @default(2)
+  rampUpDays      Int            @default(7)
+  scheduleStart   Int            @default(9)
+  scheduleEnd     Int            @default(22)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  site            Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  keywords        Keyword[]
+}
+
+enum CampaignType {
+  PF_BOOST
+  POSITION_TRACKING
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+// ─── Keywords ────────────────────────────────────────────────────────────────
+
+model Keyword {
+  id         String   @id @default(cuid())
+  campaignId String
+  keyword    String
+  targetUrl  String?
+  createdAt  DateTime @default(now())
+
+  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  visits     Visit[]
+  positions  Position[]
+}
+
+// ─── Visits (PF Boost log) ───────────────────────────────────────────────────
+
+model Visit {
+  id           String      @id @default(cuid())
+  keywordId    String
+  proxy        String
+  clickPosition Int?
+  dwellSeconds Int?
+  pagesVisited Int         @default(1)
+  status       VisitStatus @default(SUCCESS)
+  errorMessage String?
+  trafficBytes BigInt?
+  createdAt    DateTime    @default(now())
+
+  keyword      Keyword     @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+}
+
+enum VisitStatus {
+  SUCCESS
+  FAILED
+  CAPTCHA
+  NOT_FOUND
+}
+
+// ─── Positions (Rank Tracking) ───────────────────────────────────────────────
+
+model Position {
+  id        String   @id @default(cuid())
+  keywordId String
+  position  Int?
+  url       String?
+  checkedAt DateTime @default(now())
+
+  keyword   Keyword  @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@index([keywordId, checkedAt])
+}
+
+// ─── Proxy Pool ──────────────────────────────────────────────────────────────
+
+model Proxy {
+  id         String      @id @default(cuid())
+  connection String      @unique
+  provider   String      @default("prosox")
+  country    String      @default("KZ")
+  city       String?
+  status     ProxyStatus @default(ACTIVE)
+  failCount  Int         @default(0)
+  usedCount  Int         @default(0)
+  lastUsedAt DateTime?
+  createdAt  DateTime    @default(now())
+}
+
+enum ProxyStatus {
+  ACTIVE
+  BANNED
+  SLOW
+}
+
+// ─── Transactions ─────────────────────────────────────────────────────────────
+
+model Transaction {
+  id        String          @id @default(cuid())
+  userId    String
+  amount    Float
+  type      TransactionType
+  comment   String?
+  createdAt DateTime        @default(now())
+
+  user      User            @relation(fields: [userId], references: [id])
+}
+
+enum TransactionType {
+  DEPOSIT
+  CHARGE
+  REFUND
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType @default(INFO)
+  message   String
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  SANCTION
+  INFO
+  BILLING
+}
