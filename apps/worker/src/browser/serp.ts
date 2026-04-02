@@ -74,8 +74,12 @@ export async function openSerp(page: Page, keyword: string, geo: GeoConfig): Pro
     .catch(() => false);
 
   if (!loaded) {
-    // Check if it is a CAPTCHA / JS-wall page so the caller can log it properly
+    // Save screenshot for debugging — lets us see exactly what Google returned
+    const screenshotPath = `/tmp/serp_debug_${Date.now()}.png`;
+    await page.screenshot({ path: screenshotPath, fullPage: true }).catch(() => {});
     const bodyText = await page.evaluate(() => document.body?.innerText ?? '').catch(() => '');
+    console.error(`[POS] SERP not loaded. bodyText length=${bodyText.length}. Screenshot: ${screenshotPath}`);
+    console.error(`[POS] bodyText preview: ${bodyText.substring(0, 300)}`);
     if (bodyText.length < 500 || bodyText.toLowerCase().includes('unusual traffic')) {
       throw new Error('SERP_BLOCKED: Google returned a CAPTCHA or JS-gate page');
     }
