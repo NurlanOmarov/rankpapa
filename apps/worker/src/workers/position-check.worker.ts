@@ -45,8 +45,11 @@ async function processJob(job: Job<PositionCheckJobData>): Promise<void> {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     job.log(`✗ "${keyword}" → ${message}`);
+    console.error(`[POS] Job ${job.id} error for "${keyword}": ${message}`);
 
-    if (message.includes('net::ERR')) proxyManager.banProxy(proxy.server);
+    if (message.includes('net::ERR') || message.includes('Timeout')) {
+      proxyManager.banProxy(proxy.server);
+    }
 
     // Still log null position on error so history is continuous
     await prisma.position.create({
