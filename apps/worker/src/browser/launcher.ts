@@ -33,8 +33,13 @@ export async function launchSession(opts: LaunchOptions): Promise<BrowserSession
   const fingerprint = generateFingerprint(opts.deviceType);
 
   // Block media to save proxy traffic (checklist: economy)
+  // Use system Chromium from Alpine if PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set
+  // (PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 means bundled browser is not downloaded)
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined;
+
   const browser = await chromium.launch({
     headless: true,
+    executablePath,
     proxy: {
       server: opts.proxy.server,
       username: opts.proxy.username,
