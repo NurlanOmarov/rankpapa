@@ -28,13 +28,17 @@ async function warmUpSession(page: Page): Promise<void> {
     await sleep(500 + Math.random() * 1000);
 
     // Accept Google consent / cookie banner if shown (common in KZ/EU region)
-    const acceptBtn = await page
-      .locator('button:has-text("Принять"), button:has-text("Accept all"), [aria-label*="Accept"]')
-      .first()
-      .catch(() => null);
-    if (acceptBtn) {
-      await acceptBtn.click().catch(() => {});
-      await sleep(300 + Math.random() * 500);
+    try {
+      const locator = page.locator(
+        'button:has-text("Принять"), button:has-text("Accept all"), [aria-label*="Accept"]',
+      );
+      const count = await locator.count();
+      if (count > 0) {
+        await locator.first().click({ timeout: 3000 }).catch(() => {});
+        await sleep(300 + Math.random() * 500);
+      }
+    } catch {
+      // Non-fatal — banner may not be present
     }
   } catch {
     // Non-fatal — proceed without warm-up
