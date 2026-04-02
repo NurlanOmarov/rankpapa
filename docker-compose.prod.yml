@@ -61,6 +61,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-rankpapa}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rankpapa}
       REDIS_URL: redis://redis:6379
       NODE_ENV: production
+      PROSOX_LIST_FILE: /app/proxies.txt
+    volumes:
+      - ./proxies.txt:/app/proxies.txt:ro
     shm_size: '1gb'
 
   web:
