@@ -17,8 +17,35 @@ export interface SerpResult {
   element: import('playwright').ElementHandle | null;
 }
 
+/**
+ * Warm up the browser session: visit Google homepage first to acquire
+ * cookies and session state. This avoids hitting the JS-challenge that
+ * Google shows to cookieless first-time visitors.
+ */
+async function warmUpSession(page: Page): Promise<void> {
+  try {
+    await page.goto('https://www.google.kz/', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await sleep(500 + Math.random() * 1000);
+
+    // Accept Google consent / cookie banner if shown (common in KZ/EU region)
+    const acceptBtn = await page
+      .locator('button:has-text("Принять"), button:has-text("Accept all"), [aria-label*="Accept"]')
+      .first()
+      .catch(() => null);
+    if (acceptBtn) {
+      await acceptBtn.click().catch(() => {});
+      await sleep(300 + Math.random() * 500);
+    }
+  } catch {
+    // Non-fatal — proceed without warm-up
+  }
+}
+
 /** Navigate to Google.kz SERP and wait for results to load. */
 export async function openSerp(page: Page, keyword: string, geo: GeoConfig): Promise<void> {
+  // Warm up session with homepage visit before searching (avoids JS-challenge)
+  await warmUpSession(page);
+
   const url = buildGoogleSearchUrl(keyword, geo);
 
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });

@@ -140,9 +140,11 @@ export async function campaignsRoutes(app: FastifyInstance) {
     if (!campaign) return reply.status(404).send({ error: 'Not found' });
     if (campaign.status !== 'ACTIVE') return reply.status(400).send({ error: 'Campaign is not active' });
 
+    const jobIds: string[] = [];
+
     if (campaign.type === 'PF_BOOST') {
       for (const kw of campaign.keywords) {
-        await pfQueue.add('visit', {
+        const job = await pfQueue.add('visit', {
           visitId: '',
           keywordId: kw.id,
           keyword: kw.keyword,
@@ -153,19 +155,51 @@ export async function campaignsRoutes(app: FastifyInstance) {
           dwellTimeMax: campaign.dwellTimeMax,
           pagesPerSession: campaign.pagesPerSession,
         });
+        if (job.id) jobIds.push(job.id);
       }
     } else {
       for (const kw of campaign.keywords) {
-        await posQueue.add('check', {
+        const job = await posQueue.add('check', {
           keywordId: kw.id,
           keyword: kw.keyword,
           targetDomain: campaign.site.domain,
           geo: campaign.site.geo,
         });
+        if (job.id) jobIds.push(job.id);
       }
     }
 
-    return { ok: true, queued: campaign.keywords.length };
+    return { ok: true, queued: jobIds.length, jobIds };
+  });
+
+  // Poll status of a specific batch of jobs (by IDs returned from /run)
+  app.get('/:id/jobs-status', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const { ids } = req.query as { ids?: string };
+
+    const campaign = await app.prisma.campaign.findFirst({
+      where: { id, site: { userId: req.user.userId } },
+      select: { type: true, keywords: { select: { id: true } } },
+    });
+    if (!campaign) return reply.status(404).send({ error: 'Not found' });
+
+    if (!ids) return { waiting: 0, active: 0, completed: 0, failed: 0, total: 0 };
+
+    const jobIdList = ids.split(',').filter(Boolean);
+    const queue = campaign.type === 'PF_BOOST' ? pfQueue : posQueue;
+
+    let waiting = 0, active = 0, completed = 0, failed = 0;
+    for (const jobId of jobIdList) {
+      const job = await queue.getJob(jobId);
+      if (!job) { completed++; continue; }
+      const state = await job.getState();
+      if (state === 'waiting' || state === 'delayed') waiting++;
+      else if (state === 'active') active++;
+      else if (state === 'completed') completed++;
+      else if (state === 'failed') failed++;
+    }
+
+    return { waiting, active, completed, failed, total: jobIdList.length };
   });
 
   app.delete('/:id', async (req, reply) => {

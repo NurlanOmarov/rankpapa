@@ -31,12 +31,17 @@ const togglingStatus = ref(false);
 
 // Queue status
 const queueStatus = ref<{ waiting: number; active: number; completed: number; failed: number; total: number } | null>(null);
+const runJobIds = ref<string[]>([]);
 const isWorking = computed(() => (queueStatus.value?.waiting ?? 0) + (queueStatus.value?.active ?? 0) > 0);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 async function fetchQueueStatus() {
   try {
-    const { data } = await api.get(`/campaigns/${campaignId}/queue-status`);
+    const ids = runJobIds.value.join(',');
+    const url = ids
+      ? `/campaigns/${campaignId}/jobs-status?ids=${ids}`
+      : `/campaigns/${campaignId}/queue-status`;
+    const { data } = await api.get(url);
     queueStatus.value = data;
     if (!isWorking.value && pollTimer) {
       // Refresh campaign data once jobs are done
@@ -147,7 +152,8 @@ const running = ref(false);
 async function runNow() {
   running.value = true;
   try {
-    await api.post(`/campaigns/${campaignId}/run`);
+    const { data } = await api.post(`/campaigns/${campaignId}/run`);
+    runJobIds.value = data.jobIds ?? [];
     startPolling();
   } catch {
     alert('Ошибка при запуске');
@@ -294,7 +300,7 @@ const typeLabel = (type: string) => type === 'PF_BOOST' ? '🚀 ПФ-буст' :
         <div class="flex-1 bg-blue-100 rounded-full h-2">
           <div
             class="bg-blue-500 h-2 rounded-full transition-all duration-500"
-            :style="{ width: queueStatus.total ? `${Math.round(queueStatus.completed / queueStatus.total * 100)}%` : '0%' }"
+            :style="{ width: queueStatus.total ? `${Math.min(100, Math.round((queueStatus.completed + queueStatus.failed) / queueStatus.total * 100))}%` : '0%' }"
           />
         </div>
         <span class="text-xs text-blue-500 whitespace-nowrap">

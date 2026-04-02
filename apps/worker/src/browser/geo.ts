@@ -70,5 +70,7 @@ export function getGeoConfig(city: string): GeoConfig {
 export function buildGoogleSearchUrl(keyword: string, geo: GeoConfig): string {
   const q = encodeURIComponent(keyword);
   const { gl, hl, uule } = geo.googleParams;
-  return `https://www.google.kz/search?q=${q}&gl=${gl}&hl=${hl}&uule=${uule}&num=100`;
+  // num=100 is a strong bot signal — real users never request 100 results.
+  // Use default page size (10) to avoid triggering Google's bot detection.
+  return `https://www.google.kz/search?q=${q}&gl=${gl}&hl=${hl}&uule=${uule}`;
 }
