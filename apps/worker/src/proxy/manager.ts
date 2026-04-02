@@ -1,4 +1,3 @@
-import https from 'https';
 import fs from 'fs';
 
 /**
@@ -132,15 +131,34 @@ export class ProsoxProvider {
 
   get size(): number { return this.pool.length; }
 
-  private fetchText(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      https.get(url, (res) => {
-        let data = '';
-        res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => resolve(data));
-        res.on('error', reject);
-      }).on('error', reject);
-    });
+  private async fetchText(url: string): Promise<string> {
+    const urlsToTry = [url];
+    if (url.startsWith('https://')) {
+      urlsToTry.push(url.replace('https://', 'http://'));
+    }
+
+    let lastError: Error | null = null;
+
+    for (const targetUrl of urlsToTry) {
+      try {
+        console.debug(`[PROSOX] Attempting fetch from: ${targetUrl}`);
+        const response = await fetch(targetUrl, {
+          signal: AbortSignal.timeout(10000), // 10s timeout
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.text();
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[PROSOX] Failed to fetch from ${targetUrl}: ${err.message}`);
+        continue;
+      }
+    }
+
+    throw lastError || new Error(`Failed to fetch from any URL: ${urlsToTry.join(', ')}`);
   }
 }
 

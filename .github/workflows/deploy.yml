@@ -29,8 +29,12 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            echo ">>> Очистка старых контейнеров (защита от конфликтов)"
+            docker compose -f docker-compose.prod.yml down || true
+            docker rm -f rankpapa-api rankpapa-worker rankpapa-web rankpapa-postgres rankpapa-redis || true
+
             echo ">>> Собираем и запускаем контейнеры"
-            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans --force-recreate
 
             echo ">>> Ждём запуска postgres (до 30 сек)"
             sleep 5
