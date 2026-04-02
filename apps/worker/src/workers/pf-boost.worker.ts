@@ -38,6 +38,7 @@ const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', 
 });
 
 async function processJob(job: Job<PfBoostJobData>): Promise<void> {
+  console.info(`[PF-Boost Worker] Received job ${job.id} for keyword: ${job.data.keyword}`);
   const {
     keywordId,
     keyword,
@@ -53,9 +54,15 @@ async function processJob(job: Job<PfBoostJobData>): Promise<void> {
   let session = null;
 
   // Create visit record
-  const visit = await prisma.visit.create({
-    data: { keywordId, proxy: proxy.server, status: 'SUCCESS' },
-  });
+  let visit;
+  try {
+    visit = await prisma.visit.create({
+      data: { keywordId, proxy: proxy.server, status: 'SUCCESS' },
+    });
+  } catch (err) {
+    console.error(`[PF-Boost Worker] Failed to create visit record for job ${job.id}:`, err);
+    throw err; // Re-throw to let BullMQ handle retry
+  }
 
   try {
     const storageDir = getProfilePath(keywordId);
