@@ -1,21 +1,10 @@
-FROM node:20-alpine AS base
-RUN npm install -g pnpm && apk add --no-cache openssl
-# Playwright requires chromium dependencies
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    udev \
-    xvfb \
-    dbus \
-    mesa-gl \
-    mesa-dri-gallium
+# Use Debian slim — Alpine Chromium hangs on HTTPS proxy CONNECT tunnels with Playwright
+FROM node:20-slim AS base
+RUN npm install -g pnpm && apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# Install Playwright system dependencies + bundled Chromium
+# (bundled browser fully supports proxy CONNECT/SSL unlike Alpine's system chromium)
+RUN npx -y playwright@1.59.0 install --with-deps chromium && rm -rf /var/lib/apt/lists/*
 
 # ── deps stage ──────────────────────────────────────────────────────────────
 FROM base AS deps
