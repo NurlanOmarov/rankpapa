@@ -23,6 +23,7 @@ export async function searchSerper(
   gl = 'kz',
   hl = 'ru',
   num = 100,
+  location = 'Almaty, Kazakhstan',
 ): Promise<SerperResult[]> {
   const apiKey = process.env.SERPER_API_KEY;
   if (!apiKey) throw new Error('SERPER_API_KEY is not set');
@@ -33,7 +34,7 @@ export async function searchSerper(
       'X-API-KEY': apiKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ q: keyword, gl, hl, num }),
+    body: JSON.stringify({ q: keyword, gl, hl, num, location }),
     signal: AbortSignal.timeout(15000),
   });
 
@@ -50,16 +51,19 @@ export async function searchSerper(
  * Find the position of a domain in Serper.dev results.
  * Returns position (1-based) and matched URL, or null if not found in top-100.
  */
+const GEO_LOCATIONS: Record<string, string> = {
+  ALMATY: 'Almaty, Kazakhstan',
+  ASTANA: 'Astana, Kazakhstan',
+  SHYMKENT: 'Shymkent, Kazakhstan',
+};
+
 export async function checkPositionSerper(
   keyword: string,
   targetDomain: string,
   geo = 'ALMATY',
 ): Promise<{ position: number; url: string } | null> {
-  // Map geo city to Google country code
-  const gl = 'kz';
-  const hl = 'ru';
-
-  const results = await searchSerper(keyword, gl, hl, 100);
+  const location = GEO_LOCATIONS[geo] ?? GEO_LOCATIONS.ALMATY;
+  const results = await searchSerper(keyword, 'kz', 'ru', 100, location);
 
   const match = results.find((r) => {
     try {
