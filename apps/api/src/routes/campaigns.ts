@@ -111,7 +111,7 @@ export async function campaignsRoutes(app: FastifyInstance) {
           keyword: kw.keyword,
           targetDomain: site.domain,
           geo: site.geo,
-        }, { repeat: { pattern: '0 8 * * *' } });
+        }, { repeat: { pattern: '0 8 * * 1' } });
       }
     }
 
@@ -200,6 +200,47 @@ export async function campaignsRoutes(app: FastifyInstance) {
     }
 
     return { waiting, active, completed, failed, total: jobIdList.length };
+  });
+
+  app.post('/:id/keywords', async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const body = z.object({
+      keywords: z.array(z.object({ keyword: z.string().min(1), targetUrl: z.string().optional() })).min(1),
+    }).safeParse(req.body);
+    if (!body.success) return reply.status(400).send({ error: body.error.flatten() });
+
+    const campaign = await app.prisma.campaign.findFirst({
+      where: { id, site: { userId: req.user.userId }, type: 'POSITION_TRACKING' },
+      include: { site: true },
+    });
+    if (!campaign) return reply.status(404).send({ error: 'Not found' });
+
+    const created = await app.prisma.$transaction(
+      body.data.keywords.map(kw =>
+        app.prisma.keyword.create({ data: { campaignId: id, keyword: kw.keyword, targetUrl: kw.targetUrl } })
+      )
+    );
+
+    for (const kw of created) {
+      await posQueue.add('check', {
+        keywordId: kw.id,
+        keyword: kw.keyword,
+        targetDomain: campaign.site.domain,
+        geo: campaign.site.geo,
+      }, { repeat: { pattern: '0 8 * * 1' } });
+    }
+
+    return reply.status(201).send(created);
+  });
+
+  app.delete('/:id/keywords/:keywordId', async (req, reply) => {
+    const { id, keywordId } = req.params as { id: string; keywordId: string };
+    const kw = await app.prisma.keyword.findFirst({
+      where: { id: keywordId, campaignId: id, campaign: { site: { userId: req.user.userId } } },
+    });
+    if (!kw) return reply.status(404).send({ error: 'Not found' });
+    await app.prisma.keyword.delete({ where: { id: keywordId } });
+    return { ok: true };
   });
 
   app.delete('/:id', async (req, reply) => {

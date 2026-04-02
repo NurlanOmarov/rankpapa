@@ -168,6 +168,38 @@ async function deleteCampaign() {
   router.back();
 }
 
+// Keyword management
+const showAddKeywords = ref(false);
+const newKeywordsText = ref('');
+const addingKeywords = ref(false);
+
+async function addKeywords() {
+  if (!newKeywordsText.value.trim()) return;
+  const lines = newKeywordsText.value.split('\n').map(l => l.trim()).filter(Boolean);
+  const keywords = lines.map(l => ({ keyword: l }));
+  addingKeywords.value = true;
+  try {
+    const { data } = await api.post(`/campaigns/${campaignId}/keywords`, { keywords });
+    if (campaign.value) {
+      campaign.value.keywords.push(...data.map((kw: any) => ({ ...kw, visits: [], positions: [] })));
+    }
+    newKeywordsText.value = '';
+    showAddKeywords.value = false;
+  } catch {
+    alert('Ошибка при добавлении ключей');
+  } finally {
+    addingKeywords.value = false;
+  }
+}
+
+async function deleteKeyword(kwId: string) {
+  if (!confirm('Удалить этот ключевой запрос?')) return;
+  await api.delete(`/campaigns/${campaignId}/keywords/${kwId}`);
+  if (campaign.value) {
+    campaign.value.keywords = campaign.value.keywords.filter(k => k.id !== kwId);
+  }
+}
+
 function visitStatusClass(status: string) {
   const map: Record<string, string> = {
     SUCCESS: 'text-green-600',
@@ -280,11 +312,11 @@ const typeLabel = (type: string) => type === 'PF_BOOST' ? '🚀 ПФ-буст' :
             </div>
             <div>
               <p class="text-xs text-gray-400 mb-0.5">Тип</p>
-              <p class="text-2xl font-bold text-gray-900">Ежедневно</p>
+              <p class="text-2xl font-bold text-gray-900">Еженедельно</p>
             </div>
             <div>
               <p class="text-xs text-gray-400 mb-0.5">Расписание</p>
-              <p class="text-2xl font-bold text-gray-900">08:00</p>
+              <p class="text-2xl font-bold text-gray-900">Пн 08:00</p>
             </div>
           </template>
           <div>
@@ -324,7 +356,36 @@ const typeLabel = (type: string) => type === 'PF_BOOST' ? '🚀 ПФ-буст' :
 
       <!-- Keywords + visits -->
       <div class="space-y-4">
-        <h2 class="font-semibold text-gray-900">Ключевые запросы</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-gray-900">Ключевые запросы</h2>
+          <button
+            v-if="campaign.type === 'POSITION_TRACKING'"
+            @click="showAddKeywords = !showAddKeywords"
+            class="px-3 py-1.5 text-xs font-medium border border-primary-200 text-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+          >
+            {{ showAddKeywords ? 'Отмена' : '+ Добавить ключи' }}
+          </button>
+        </div>
+
+        <!-- Add keywords form -->
+        <div v-if="showAddKeywords" class="bg-white rounded-2xl border border-primary-100 p-5">
+          <p class="text-xs text-gray-500 mb-2">Введите ключевые запросы — по одному на строку</p>
+          <textarea
+            v-model="newKeywordsText"
+            rows="4"
+            placeholder="медицинские двери&#10;стальные двери алматы&#10;купить дверь"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+          />
+          <div class="flex justify-end mt-3">
+            <button
+              @click="addKeywords"
+              :disabled="addingKeywords || !newKeywordsText.trim()"
+              class="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 disabled:opacity-60 transition-colors"
+            >
+              {{ addingKeywords ? 'Добавляю...' : 'Добавить' }}
+            </button>
+          </div>
+        </div>
 
         <div v-for="kw in campaign.keywords" :key="kw.id" class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div class="px-5 py-4 flex items-center justify-between border-b border-gray-50">
@@ -348,6 +409,12 @@ const typeLabel = (type: string) => type === 'PF_BOOST' ? '🚀 ПФ-буст' :
               >
                 {{ expandedGraphs[kw.id] ? 'Скрыть график' : 'История позиций' }}
               </button>
+              <button
+                v-if="campaign.type === 'POSITION_TRACKING'"
+                @click="deleteKeyword(kw.id)"
+                class="px-2 py-1 text-[10px] text-red-400 hover:text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-100 transition-colors"
+                title="Удалить ключ"
+              >✕</button>
             </div>
           </div>
 
@@ -384,7 +451,7 @@ const typeLabel = (type: string) => type === 'PF_BOOST' ? '🚀 ПФ-буст' :
             </div>
           </div>
           <div v-else class="px-5 py-4 text-xs text-gray-400">
-            {{ campaign.type === 'PF_BOOST' ? 'Визитов пока нет — воркер запустит их по расписанию' : 'Позиции проверяются ежедневно в 08:00 — нажмите «История позиций»' }}
+            {{ campaign.type === 'PF_BOOST' ? 'Визитов пока нет — воркер запустит их по расписанию' : 'Позиции проверяются еженедельно по понедельникам в 08:00 — нажмите «История позиций»' }}
           </div>
         </div>
       </div>
