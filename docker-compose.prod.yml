@@ -62,6 +62,7 @@ services:
       REDIS_URL: redis://redis:6379
       NODE_ENV: production
       PROSOX_LIST_FILE: /app/proxies.txt
+      SERPER_API_KEY: ${SERPER_API_KEY:-}
     volumes:
       - ./proxies.txt:/app/proxies.txt:ro
     shm_size: '1gb'
