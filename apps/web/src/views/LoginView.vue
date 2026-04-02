@@ -33,11 +33,11 @@ async function submit() {
         <form @submit.prevent="submit" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input v-model="email" type="email" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            <input v-model="email" type="email" required autocomplete="email" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
-            <input v-model="password" type="password" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            <input v-model="password" type="password" required autocomplete="current-password" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
           <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
           <button type="submit" :disabled="loading" class="w-full py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-60 transition-colors">
