@@ -71,20 +71,29 @@ export class ProsoxProvider {
       `https://${this.host}/api/proxy/generate?` +
       `key=${this.packageKey}&count=${portCount}&country=KZ&format=host:port:login:password`;
 
-    const raw = await this.fetchText(url);
-    const lines = raw.trim().split('\n').filter((l) => l.includes(':'));
+    try {
+      const raw = await this.fetchText(url);
+      const lines = raw.trim().split('\n').filter((l) => l.includes(':'));
 
-    this.pool = lines.map((line) => {
-      const [host, port, user, pass] = line.trim().split(':');
-      return {
-        server: `http://${host}:${port}`,
-        username: user ?? this.login,
-        password: pass ?? this.password,
-        provider: 'prosox',
-      };
-    });
+      if (lines.length === 0) {
+        console.warn(`[PROSOX] API returned no proxies. Raw response: ${raw.substring(0, 100)}...`);
+      }
 
-    console.info(`[PROSOX] Loaded ${this.pool.length} proxies from API`);
+      this.pool = lines.map((line) => {
+        const [host, port, user, pass] = line.trim().split(':');
+        return {
+          server: `http://${host}:${port}`,
+          username: user ?? this.login,
+          password: pass ?? this.password,
+          provider: 'prosox',
+        };
+      });
+
+      console.info(`[PROSOX] Loaded ${this.pool.length} proxies from API`);
+    } catch (error) {
+      console.error(`[PROSOX] Failed to load proxies from API (${url}):`, error);
+      // Don't throw, let the worker continue with 0 proxies (it will fail jobs with better error messages)
+    }
   }
 
   /**
