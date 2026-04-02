@@ -31,6 +31,7 @@ export class ProsoxProvider {
   private readonly packageKey: string;
   private readonly login: string;
   private readonly password: string;
+  private readonly host: string;
   private pool: ProxyConfig[] = [];
   private usageMap = new Map<string, number>(); // server → visit count
 
@@ -39,6 +40,7 @@ export class ProsoxProvider {
     this.packageKey = process.env.PROSOX_PACKAGE_KEY ?? '';
     this.login = process.env.PROSOX_LOGIN ?? '';
     this.password = process.env.PROSOX_PASSWORD ?? '';
+    this.host = process.env.PROSOX_HOST ?? 'prosox.io';
   }
 
   /**
@@ -66,7 +68,7 @@ export class ProsoxProvider {
 
     // Fallback: PROSOX API
     const url =
-      `https://prosox.com/api/proxy/generate?` +
+      `https://${this.host}/api/proxy/generate?` +
       `key=${this.packageKey}&count=${portCount}&country=KZ&format=host:port:login:password`;
 
     const raw = await this.fetchText(url);
